@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Classroom Quiz</title>
+  <meta name="description" content="Live classroom quiz game — teacher projects questions, students vote from their phones.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    /* ═══════════════════════════════════════════════════════════
+       DESIGN SYSTEM
+       ═══════════════════════════════════════════════════════════ */
+    :root {
+      --bg-deep: #0b1120;
+      --bg-surface: #151d30;
+      --bg-card: #1b2540;
+      --bg-card-hover: #212e4a;
+      --border: rgba(255,255,255,0.08);
+      --border-light: rgba(255,255,255,0.12);
+      --text: #f1f5f9;
+      --text-muted: #8899b4;
+      --text-dim: #4a5b78;
+      --primary: #818cf8;
+      --primary-glow: rgba(129,140,248,0.25);
+      --success: #34d399;
+      --success-glow: rgba(52,211,153,0.2);
+      --warning: #fbbf24;
+      --danger: #fb7185;
+      --bar-1: #818cf8;
+      --bar-2: #f59e0b;
+      --bar-3: #34d399;
+      --bar-4: #fb7185;
+      --radius: 14px;
+      --radius-sm: 10px;
+      --radius-xs: 7px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.35);
+      --shadow-lg: 0 8px 40px rgba(0,0,0,0.5);
+      --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       RESET & BASE
+       ═══════════════════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg-deep);
+      color: var(--text);
+      min-height: 100dvh;
+      overflow-x: hidden;
+      line-height: 1.5;
+    }
+
+    /* Subtle background gradient */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: radial-gradient(ellipse at 30% 20%, rgba(99,102,241,0.08) 0%, transparent 60%),
+                  radial-gradient(ellipse at 70% 80%, rgba(52,211,153,0.05) 0%, transparent 50%);
+      pointer-events: none; z-index: 0;
+    }
+
+    #app {
+      position: relative; z-index: 1;
+      min-height: 100dvh;
+      display: flex; flex-direction: column;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       LANDING SCREEN
+       ═══════════════════════════════════════════════════════════ */
+    .landing {
+      flex: 1;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .landing-card {
+      text-align: center;
+      max-width: 460px; width: 100%;
+    }
+    .landing-icon {
+      font-size: 56px;
+      margin-bottom: 12px;
+      filter: drop-shadow(0 0 20px rgba(129,140,248,0.4));
+    }
+    .landing-title {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, var(--primary), var(--success));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+    .landing-sub {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      margin-bottom: 40px;
+      font-weight: 400;
+    }
+    .role-buttons {
+      display: flex; gap: 16px;
+      flex-wrap: wrap; justify-content: center;
+    }
+    .role-btn {
+      flex: 1; min-width: 180px;
+      padding: 22px 28px;
+      border: 2px solid var(--border-light);
+      border-radius: var(--radius);
+      background: var(--bg-card);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex; flex-direction: column;
+      align-items: center; gap: 10px;
+    }
+    .role-btn:hover {
+      border-color: var(--primary);
+      background: var(--bg-card-hover);
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-lg), 0 0 30px var(--primary-glow);
+    }
+    .role-btn:active { transform: translateY(-1px); }
+    .role-btn .role-emoji { font-size: 36px; }
+    .role-btn .role-label { font-size: 0.85rem; color: var(--text-muted); font-weight: 400; }
+
+    /* ═══════════════════════════════════════════════════════════
+       SHARED LAYOUT
+       ═══════════════════════════════════════════════════════════ */
+    .screen {
+      flex: 1;
+      display: flex; flex-direction: column;
+      padding: 0 0 24px;
+    }
+    .topbar {
+      padding: 16px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      background: rgba(11,17,32,0.8);
+      backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 10;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .round-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: 100px;
+      padding: 6px 16px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .round-badge .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--primary);
+    }
+    .q-counter {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .sync-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      flex-shrink: 0;
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+    .main-content {
+      flex: 1;
+      display: flex; flex-direction: column;
+      padding: 24px;
+      gap: 24px;
+      max-width: 900px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       QUESTION DISPLAY
+       ═══════════════════════════════════════════════════════════ */
+    .question-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius);
+      padding: 32px;
+      box-shadow: var(--shadow);
+    }
+    .round-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--primary);
+      margin-bottom: 12px;
+    }
+    .question-text {
+      font-size: clamp(1.3rem, 3.5vw, 2rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.3;
+    }
+    .question-text.item-name {
+      font-size: clamp(2rem, 6vw, 3.5rem);
+      text-align: center;
+      padding: 12px 0;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       TEACHER — RESULTS BARS
+       ═══════════════════════════════════════════════════════════ */
+    .results-section {
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .results-header {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .results-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+    }
+    .vote-total {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+    .bar-row {
+      display: flex; align-items: center; gap: 14px;
+      transition: var(--transition);
+    }
+    .bar-label {
+      min-width: 130px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-align: right;
+      white-space: nowrap;
+      transition: var(--transition);
+    }
+    .bar-track {
+      flex: 1;
+      height: 42px;
+      background: rgba(255,255,255,0.04);
+      border-radius: var(--radius-xs);
+      overflow: hidden;
+      position: relative;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: var(--radius-xs);
+      transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      display: flex; align-items: center;
+      padding-left: 14px;
+      min-width: 0;
+      position: relative;
+    }
+    .bar-count {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: white;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+      white-space: nowrap;
+    }
+    .bar-pct {
+      position: absolute;
+      right: 12px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.8);
+    }
+
+    /* Revealed states */
+    .bar-row.correct .bar-label { color: var(--success); }
+    .bar-row.correct .bar-fill { box-shadow: 0 0 20px var(--success-glow); }
+    .bar-row.incorrect { opacity: 0.35; }
+    .bar-row.incorrect .bar-fill { filter: saturate(0.3); }
+
+    /* ═══════════════════════════════════════════════════════════
+       TEACHER — CONTROLS
+       ═══════════════════════════════════════════════════════════ */
+    .controls {
+      display: flex; gap: 12px;
+      flex-wrap: wrap;
+      padding: 20px 24px;
+      border-top: 1px solid var(--border);
+      background: rgba(11,17,32,0.8);
+      backdrop-filter: blur(12px);
+      position: sticky; bottom: 0;
+    }
+    .btn {
+      padding: 14px 24px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex; align-items: center; gap: 8px;
+      white-space: nowrap;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    .btn-primary:hover { background: #6d77f4; box-shadow: 0 0 24px var(--primary-glow); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .btn-success {
+      background: var(--success);
+      color: #052e16;
+    }
+    .btn-success:hover { background: #2bd48d; box-shadow: 0 0 24px var(--success-glow); }
+    .btn-success:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border-light);
+    }
+    .btn-ghost:hover { background: var(--bg-card); color: var(--text); }
+    .btn-danger-ghost {
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid rgba(251,113,133,0.25);
+    }
+    .btn-danger-ghost:hover { background: rgba(251,113,133,0.1); }
+    .controls .spacer { flex: 1; }
+
+    /* ═══════════════════════════════════════════════════════════
+       STUDENT — VOTING BUTTONS
+       ═══════════════════════════════════════════════════════════ */
+    .vote-options {
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .vote-btn {
+      width: 100%;
+      padding: 20px 24px;
+      border: 2px solid var(--border-light);
+      border-radius: var(--radius);
+      background: var(--bg-card);
+      color: var(--text);
+      font-family: inherit;
+      font-size: clamp(1.1rem, 3vw, 1.35rem);
+      font-weight: 700;
+      cursor: pointer;
+      transition: var(--transition);
+      text-align: left;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .vote-btn:hover:not(:disabled) {
+      border-color: var(--primary);
+      background: var(--bg-card-hover);
+      transform: translateX(4px);
+    }
+    .vote-btn:active:not(:disabled) { transform: translateX(2px); }
+    .vote-btn:disabled { cursor: not-allowed; }
+    .vote-btn .opt-key {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 40px; height: 40px;
+      border-radius: var(--radius-xs);
+      font-size: 1rem;
+      font-weight: 800;
+      flex-shrink: 0;
+      background: rgba(255,255,255,0.06);
+      color: var(--text-muted);
+      transition: var(--transition);
+    }
+    .vote-btn:hover:not(:disabled) .opt-key {
+      background: var(--primary);
+      color: white;
+    }
+
+    /* Locked-in state */
+    .vote-btn.selected {
+      border-color: var(--primary);
+      background: rgba(129,140,248,0.12);
+    }
+    .vote-btn.selected .opt-key {
+      background: var(--primary);
+      color: white;
+    }
+    .vote-btn.locked:not(.selected) {
+      opacity: 0.3;
+      border-color: transparent;
+    }
+
+    /* Revealed states for student */
+    .vote-btn.revealed-correct {
+      border-color: var(--success);
+      background: rgba(52,211,153,0.12);
+    }
+    .vote-btn.revealed-correct .opt-key {
+      background: var(--success);
+      color: #052e16;
+    }
+    .vote-btn.revealed-incorrect {
+      opacity: 0.3;
+      border-color: transparent;
+    }
+
+    .locked-banner {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      padding: 16px;
+      border-radius: var(--radius-sm);
+      background: rgba(129,140,248,0.1);
+      border: 1px solid rgba(129,140,248,0.2);
+      color: var(--primary);
+      font-weight: 700;
+      font-size: 1.05rem;
+    }
+    .locked-banner .check {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px;
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      font-size: 0.9rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       WAITING / LOADING STATES
+       ═══════════════════════════════════════════════════════════ */
+    .waiting-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 48px 32px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+    .waiting-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    .waiting-text {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .loading-shimmer {
+      background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-card-hover) 50%, var(--bg-card) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s ease-in-out infinite;
+      border-radius: var(--radius);
+      height: 42px;
+    }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       COMPLETE SCREEN
+       ═══════════════════════════════════════════════════════════ */
+    .complete-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius);
+      padding: 48px 32px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+    .complete-icon { font-size: 64px; margin-bottom: 16px; }
+    .complete-title {
+      font-size: 2rem;
+      font-weight: 900;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, var(--primary), var(--success));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .complete-sub {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       REVEALED BANNER (TEACHER)
+       ═══════════════════════════════════════════════════════════ */
+    .revealed-banner {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      padding: 12px 20px;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .revealed-banner.has-answer {
+      background: rgba(52,211,153,0.1);
+      border: 1px solid rgba(52,211,153,0.2);
+      color: var(--success);
+    }
+    .revealed-banner.debate {
+      background: rgba(251,191,36,0.1);
+      border: 1px solid rgba(251,191,36,0.2);
+      color: var(--warning);
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       RESPONSIVE
+       ═══════════════════════════════════════════════════════════ */
+    @media (max-width: 600px) {
+      .topbar { padding: 12px 16px; }
+      .main-content { padding: 16px; gap: 16px; }
+      .question-card { padding: 20px; }
+      .bar-label { min-width: 90px; font-size: 0.85rem; }
+      .bar-track { height: 36px; }
+      .controls { padding: 14px 16px; }
+      .btn { padding: 12px 16px; font-size: 0.85rem; }
+      .vote-btn { padding: 16px 18px; }
+      .vote-btn .opt-key { width: 34px; height: 34px; font-size: 0.85rem; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    // ═══════════════════════════════════════════════════════════
+    // QUESTION DATA
+    // ═══════════════════════════════════════════════════════════
+    const QUESTIONS = [
+      // ─── Round 1: Computer or Not? (binary, no correct answer) ───
+      { round: 1, roundTitle: 'Computer or Not?', text: 'Calculator', options: ['Computer', 'Not a Computer'], correct: null },
+      { round: 1, roundTitle: 'Computer or Not?', text: 'Smartphone', options: ['Computer', 'Not a Computer'], correct: null },
+      { round: 1, roundTitle: 'Computer or Not?', text: 'Traffic Light', options: ['Computer', 'Not a Computer'], correct: null },
+      { round: 1, roundTitle: 'Computer or Not?', text: 'Microwave Oven', options: ['Computer', 'Not a Computer'], correct: null },
+      { round: 1, roundTitle: 'Computer or Not?', text: 'Washing Machine', options: ['Computer', 'Not a Computer'], correct: null },
+      { round: 1, roundTitle: 'Computer or Not?', text: 'Human Brain', options: ['Computer', 'Not a Computer'], correct: null },
+      { round: 1, roundTitle: 'Computer or Not?', text: 'Abacus', options: ['Computer', 'Not a Computer'], correct: null },
+      { round: 1, roundTitle: 'Computer or Not?', text: 'Digital Wristwatch', options: ['Computer', 'Not a Computer'], correct: null },
+      { round: 1, roundTitle: 'Computer or Not?', text: 'Thermostat', options: ['Computer', 'Not a Computer'], correct: null },
+
+      // ─── Round 2: Characteristics of Computers (MCQ with correct) ───
+      {
+        round: 2, roundTitle: 'Characteristics of Computers',
+        text: 'A computer solving 10,000 calculations without a single mistake demonstrates which characteristic?',
+        options: ['Speed', 'Accuracy', 'Diligence', 'Versatility'],
+        correct: 1
+      },
+      {
+        round: 2, roundTitle: 'Characteristics of Computers',
+        text: 'The same computer can run a game, do accounting, and edit a video — this shows:',
+        options: ['Storage', 'Versatility', 'Diligence', 'No IQ'],
+        correct: 1
+      },
+      {
+        round: 2, roundTitle: 'Characteristics of Computers',
+        text: 'A computer doing repetitive tasks for hours without getting tired or bored shows:',
+        options: ['Speed', 'Accuracy', 'Diligence', 'Storage'],
+        correct: 2
+      },
+      {
+        round: 2, roundTitle: 'Characteristics of Computers',
+        text: 'A computer executing a flawed instruction exactly as written, producing a wrong result, shows it lacks:',
+        options: ['Speed', 'Storage', 'Versatility', 'Judgment (No IQ)'],
+        correct: 3
+      },
+
+      // ─── Round 3: Generations of Computers (MCQ with correct) ───
+      {
+        round: 3, roundTitle: 'Generations of Computers',
+        text: 'Which generation of computers used vacuum tubes?',
+        options: ['First', 'Second', 'Third', 'Fourth'],
+        correct: 0
+      },
+      {
+        round: 3, roundTitle: 'Generations of Computers',
+        text: 'Which generation introduced transistors?',
+        options: ['First', 'Second', 'Third', 'Fourth'],
+        correct: 1
+      },
+      {
+        round: 3, roundTitle: 'Generations of Computers',
+        text: 'Which generation put thousands of transistors on a single chip (Integrated Circuits)?',
+        options: ['First', 'Second', 'Third', 'Fourth'],
+        correct: 2
+      },
+      {
+        round: 3, roundTitle: 'Generations of Computers',
+        text: 'Which generation introduced the microprocessor — the whole CPU on one chip?',
+        options: ['First', 'Second', 'Third', 'Fourth'],
+        correct: 3
+      }
+    ];
+
+    const TOTAL_QUESTIONS = QUESTIONS.length;
+    const BAR_COLORS = ['#818cf8', '#f59e0b', '#34d399', '#fb7185'];
+    const OPT_KEYS = ['A', 'B', 'C', 'D'];
+
+    // ═══════════════════════════════════════════════════════════
+    // SESSION STATE (JS variables only, not persisted)
+    // ═══════════════════════════════════════════════════════════
+    let role = null;                                               // 'teacher' | 'student'
+    const studentId = 'sid_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+    let pollingTimer = null;
+    let lastRenderedState = null;                                   // dedup renders
+
+    // Student-local state
+    let myVoteThisQuestion = null;                                 // option index or null
+
+    // Cached state from storage (so we never blank the screen)
+    let cachedSession = { index: 0, revealed: false };
+    let cachedVotes = {};                                          // { studentId: optionIndex, ... }
+
+    // ═══════════════════════════════════════════════════════════
+    // STORAGE HELPERS (all try/catch wrapped)
+    // ═══════════════════════════════════════════════════════════
+    async function sGet(key) {
+      try {
+        const raw = await window.storage.getItem(key);
+        return raw != null ? JSON.parse(raw) : null;
+      } catch (e) {
+        console.warn('storage.get error:', key, e);
+        return null;
+      }
+    }
+
+    async function sSet(key, value) {
+      try {
+        await window.storage.setItem(key, JSON.stringify(value));
+        return true;
+      } catch (e) {
+        console.warn('storage.set error:', key, e);
+        return false;
+      }
+    }
+
+    async function sRemove(key) {
+      try {
+        await window.storage.removeItem(key);
+      } catch (e) {
+        console.warn('storage.remove error:', key, e);
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // RENDERING ENGINE
+    // ═══════════════════════════════════════════════════════════
+    const $app = document.getElementById('app');
+
+    function render(html) { $app.innerHTML = html; }
+
+    // ─── Landing Screen ───
+    function renderLanding() {
+      render(`
+        <div class="landing">
+          <div class="landing-card">
+            <div class="landing-icon">🎓</div>
+            <h1 class="landing-title">Classroom Quiz</h1>
+            <p class="landing-sub">Real-time quiz game — no login required</p>
+            <div class="role-buttons">
+              <button class="role-btn" id="btn-teacher" onclick="chooseRole('teacher')">
+                <span class="role-emoji">🖥️</span>
+                I'm the Teacher
+                <span class="role-label">Project on the big screen</span>
+              </button>
+              <button class="role-btn" id="btn-student" onclick="chooseRole('student')">
+                <span class="role-emoji">📱</span>
+                I'm a Student
+                <span class="role-label">Vote from my phone</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      `);
+    }
+
+    // ─── Teacher View ───
+    function renderTeacher(session, votes) {
+      const idx = session.index;
+      const revealed = session.revealed;
+      const isComplete = idx >= TOTAL_QUESTIONS;
+
+      if (isComplete) {
+        render(`
+          <div class="screen">
+            ${topbarHTML(QUESTIONS[TOTAL_QUESTIONS - 1], TOTAL_QUESTIONS - 1, true)}
+            <div class="main-content">
+              <div class="complete-card">
+                <div class="complete-icon">🎉</div>
+                <h2 class="complete-title">Quiz Complete!</h2>
+                <p class="complete-sub">Great work, everyone!</p>
+              </div>
+            </div>
+            <div class="controls">
+              <button class="btn btn-danger-ghost" onclick="resetSession()">↻ Reset Session</button>
+            </div>
+          </div>
+        `);
+        return;
+      }
+
+      const q = QUESTIONS[idx];
+      const tallies = tallyVotes(votes, q.options.length);
+      const totalVotes = tallies.reduce((a, b) => a + b, 0);
+      const maxTally = Math.max(...tallies, 1);
+      const isRound1 = q.round === 1;
+      const hasCorrect = q.correct !== null;
+      const isLast = idx === TOTAL_QUESTIONS - 1;
+
+      let barsHTML = '';
+      for (let i = 0; i < q.options.length; i++) {
+        const count = tallies[i];
+        const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
+        const widthPct = totalVotes > 0 ? (count / maxTally) * 100 : 0;
+        const color = BAR_COLORS[i % BAR_COLORS.length];
+
+        let rowClass = 'bar-row';
+        if (revealed && hasCorrect) {
+          rowClass += i === q.correct ? ' correct' : ' incorrect';
+        }
+
+        barsHTML += `
+          <div class="${rowClass}">
+            <span class="bar-label">${q.options[i]}</span>
+            <div class="bar-track">
+              <div class="bar-fill" style="width:${widthPct}%;background:${color};">
+                ${count > 0 ? `<span class="bar-count">${count}</span><span class="bar-pct">${pct}%</span>` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      let revealBannerHTML = '';
+      if (revealed) {
+        if (hasCorrect) {
+          revealBannerHTML = `
+            <div class="revealed-banner has-answer">
+              ✅ Answer revealed — ${q.options[q.correct]}
+            </div>`;
+        } else {
+          revealBannerHTML = `
+            <div class="revealed-banner debate">
+              🔒 Voting locked — discuss the results!
+            </div>`;
+        }
+      }
+
+      render(`
+        <div class="screen">
+          ${topbarHTML(q, idx, false)}
+          <div class="main-content">
+            <div class="question-card">
+              <div class="round-title">Round ${q.round} — ${q.roundTitle}</div>
+              <div class="question-text ${isRound1 ? 'item-name' : ''}">${isRound1 ? q.text : '‟' + q.text + '"'}</div>
+            </div>
+            ${revealBannerHTML}
+            <div class="results-section">
+              <div class="results-header">
+                <span class="results-title">Live Results</span>
+                <span class="vote-total">${totalVotes} vote${totalVotes !== 1 ? 's' : ''}</span>
+              </div>
+              ${barsHTML}
+            </div>
+          </div>
+          <div class="controls">
+            <button class="btn btn-success" id="btn-reveal" onclick="revealAnswer()" ${revealed ? 'disabled' : ''}>
+              ${isRound1 ? '🔒 Lock Votes' : '✦ Reveal Answer'}
+            </button>
+            <button class="btn btn-primary" id="btn-next" onclick="nextQuestion()" ${!revealed ? 'disabled' : ''}>
+              ${isLast ? '🏁 Finish Quiz' : '→ Next Question'}
+            </button>
+            <span class="spacer"></span>
+            <button class="btn btn-danger-ghost" onclick="resetSession()">↻ Reset</button>
+          </div>
+        </div>
+      `);
+    }
+
+    // ─── Student View ───
+    function renderStudent(session, votes) {
+      const idx = session.index;
+      const revealed = session.revealed;
+      const isComplete = idx >= TOTAL_QUESTIONS;
+
+      if (isComplete) {
+        render(`
+          <div class="screen">
+            <div class="main-content" style="justify-content:center;align-items:center;">
+              <div class="complete-card">
+                <div class="complete-icon">🎉</div>
+                <h2 class="complete-title">Quiz Complete!</h2>
+                <p class="complete-sub">Thanks for playing!</p>
+              </div>
+            </div>
+          </div>
+        `);
+        return;
+      }
+
+      const q = QUESTIONS[idx];
+      const isRound1 = q.round === 1;
+      const hasCorrect = q.correct !== null;
+      const myVote = myVoteThisQuestion;
+      const hasVoted = myVote !== null;
+
+      let optionsHTML = '';
+      for (let i = 0; i < q.options.length; i++) {
+        let cls = 'vote-btn';
+        let disabled = false;
+
+        if (revealed) {
+          disabled = true;
+          if (hasCorrect) {
+            cls += i === q.correct ? ' revealed-correct' : ' revealed-incorrect';
+            if (i === myVote) cls += ' selected';
+          } else {
+            // Round 1 — no correct answer, just freeze
+            if (i === myVote) cls += ' selected';
+            else cls += ' locked';
+          }
+        } else if (hasVoted) {
+          disabled = true;
+          cls += i === myVote ? ' selected locked' : ' locked';
+        }
+
+        optionsHTML += `
+          <button class="${cls}" ${disabled ? 'disabled' : ''} onclick="castVote(${i})" id="vote-opt-${i}">
+            <span class="opt-key">${OPT_KEYS[i] || (i + 1)}</span>
+            ${q.options[i]}
+          </button>
+        `;
+      }
+
+      let statusHTML = '';
+      if (hasVoted && !revealed) {
+        statusHTML = `
+          <div class="locked-banner">
+            <span class="check">✓</span>
+            Vote locked in
+          </div>
+        `;
+      } else if (revealed && hasCorrect) {
+        const correct = myVote === q.correct;
+        statusHTML = `
+          <div class="locked-banner" style="background:${correct ? 'rgba(52,211,153,0.1)' : 'rgba(251,113,133,0.1)'};border-color:${correct ? 'rgba(52,211,153,0.2)' : 'rgba(251,113,133,0.2)'};color:${correct ? 'var(--success)' : 'var(--danger)'};">
+            <span class="check" style="background:${correct ? 'var(--success)' : 'var(--danger)'};">${correct ? '✓' : '✗'}</span>
+            ${correct ? 'Correct!' : 'The answer was: ' + q.options[q.correct]}
+          </div>
+        `;
+      } else if (revealed && !hasCorrect) {
+        statusHTML = `
+          <div class="locked-banner" style="background:rgba(251,191,36,0.1);border-color:rgba(251,191,36,0.2);color:var(--warning);">
+            🔒 Voting locked — time to discuss!
+          </div>
+        `;
+      }
+
+      render(`
+        <div class="screen">
+          ${topbarHTML(q, idx, false)}
+          <div class="main-content">
+            <div class="question-card">
+              <div class="round-title">Round ${q.round} — ${q.roundTitle}</div>
+              <div class="question-text ${isRound1 ? 'item-name' : ''}">${isRound1 ? q.text : '‟' + q.text + '"'}</div>
+            </div>
+            <div class="vote-options">
+              ${optionsHTML}
+            </div>
+            ${statusHTML}
+          </div>
+        </div>
+      `);
+    }
+
+    // ─── Waiting (student, before teacher starts) ───
+    function renderStudentWaiting() {
+      render(`
+        <div class="screen">
+          <div class="topbar">
+            <span class="round-badge"><span class="dot"></span> Waiting</span>
+            <span class="sync-dot" title="Syncing"></span>
+          </div>
+          <div class="main-content" style="justify-content:center;align-items:center;">
+            <div class="waiting-card">
+              <div class="waiting-icon">📡</div>
+              <p class="waiting-text">Waiting for the teacher to start the quiz…</p>
+            </div>
+          </div>
+        </div>
+      `);
+    }
+
+    // ─── Shared topbar ───
+    function topbarHTML(q, idx, isComplete) {
+      return `
+        <div class="topbar">
+          <span class="round-badge"><span class="dot"></span> Round ${q.round}</span>
+          <span class="q-counter">Question ${idx + 1} of ${TOTAL_QUESTIONS}</span>
+          <span class="sync-dot" title="Live sync active"></span>
+        </div>
+      `;
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // VOTE TALLYING
+    // ═══════════════════════════════════════════════════════════
+    function tallyVotes(votes, optionCount) {
+      const tallies = new Array(optionCount).fill(0);
+      if (!votes || typeof votes !== 'object') return tallies;
+      for (const sid of Object.keys(votes)) {
+        const optIdx = votes[sid];
+        if (typeof optIdx === 'number' && optIdx >= 0 && optIdx < optionCount) {
+          tallies[optIdx]++;
+        }
+      }
+      return tallies;
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ROLE SELECTION
+    // ═══════════════════════════════════════════════════════════
+    window.chooseRole = async function(r) {
+      role = r;
+      if (role === 'teacher') {
+        // Initialize session if none exists
+        const existing = await sGet('session:currentQuestion');
+        if (!existing) {
+          await sSet('session:currentQuestion', { index: 0, revealed: false });
+        }
+        cachedSession = (await sGet('session:currentQuestion')) || { index: 0, revealed: false };
+        cachedVotes = (await sGet('votes:q' + cachedSession.index)) || {};
+        renderTeacher(cachedSession, cachedVotes);
+      } else {
+        const existing = await sGet('session:currentQuestion');
+        if (existing) {
+          cachedSession = existing;
+          // Check if student already voted on this question
+          const votes = await sGet('votes:q' + cachedSession.index);
+          cachedVotes = votes || {};
+          if (votes && votes[studentId] !== undefined) {
+            myVoteThisQuestion = votes[studentId];
+          } else {
+            myVoteThisQuestion = null;
+          }
+          renderStudent(cachedSession, cachedVotes);
+        } else {
+          renderStudentWaiting();
+        }
+      }
+      startPolling();
+    };
+
+    // ═══════════════════════════════════════════════════════════
+    // TEACHER ACTIONS
+    // ═══════════════════════════════════════════════════════════
+    window.nextQuestion = async function() {
+      const session = (await sGet('session:currentQuestion')) || cachedSession;
+      const nextIdx = session.index + 1;
+      const newSession = { index: nextIdx, revealed: false };
+      await sSet('session:currentQuestion', newSession);
+      cachedSession = newSession;
+      cachedVotes = (await sGet('votes:q' + nextIdx)) || {};
+      renderTeacher(cachedSession, cachedVotes);
+    };
+
+    window.revealAnswer = async function() {
+      const session = (await sGet('session:currentQuestion')) || cachedSession;
+      const newSession = { index: session.index, revealed: true };
+      await sSet('session:currentQuestion', newSession);
+      cachedSession = newSession;
+      renderTeacher(cachedSession, cachedVotes);
+    };
+
+    window.resetSession = async function() {
+      // Clear all vote keys
+      for (let i = 0; i < TOTAL_QUESTIONS; i++) {
+        await sRemove('votes:q' + i);
+      }
+      await sSet('session:currentQuestion', { index: 0, revealed: false });
+      cachedSession = { index: 0, revealed: false };
+      cachedVotes = {};
+      renderTeacher(cachedSession, cachedVotes);
+    };
+
+    // ═══════════════════════════════════════════════════════════
+    // STUDENT ACTIONS
+    // ═══════════════════════════════════════════════════════════
+    window.castVote = async function(optionIndex) {
+      if (myVoteThisQuestion !== null) return;      // already voted
+      if (cachedSession.revealed) return;            // already revealed
+
+      myVoteThisQuestion = optionIndex;
+
+      // Read current votes, add ours, write back
+      const voteKey = 'votes:q' + cachedSession.index;
+      const existing = (await sGet(voteKey)) || {};
+      existing[studentId] = optionIndex;
+      await sSet(voteKey, existing);
+      cachedVotes = existing;
+
+      renderStudent(cachedSession, cachedVotes);
+    };
+
+    // ═══════════════════════════════════════════════════════════
+    // POLLING
+    // ═══════════════════════════════════════════════════════════
+    function startPolling() {
+      if (pollingTimer) clearInterval(pollingTimer);
+      pollingTimer = setInterval(poll, 2000);
+    }
+
+    let lastQIndex = -1;
+
+    async function poll() {
+      const session = await sGet('session:currentQuestion');
+      if (!session) {
+        if (role === 'student') renderStudentWaiting();
+        return;
+      }
+
+      const idx = session.index;
+      const votes = (await sGet('votes:q' + idx)) || {};
+
+      // Detect question change for student — reset local vote
+      if (role === 'student' && idx !== lastQIndex) {
+        // Check if we somehow already voted on this new question (e.g. page didn't refresh)
+        if (votes[studentId] !== undefined) {
+          myVoteThisQuestion = votes[studentId];
+        } else {
+          myVoteThisQuestion = null;
+        }
+        lastQIndex = idx;
+      }
+
+      // Dedup: avoid re-render if nothing changed
+      const stateKey = JSON.stringify({ session, votes });
+      if (stateKey === lastRenderedState) return;
+      lastRenderedState = stateKey;
+
+      cachedSession = session;
+      cachedVotes = votes;
+
+      if (role === 'teacher') {
+        renderTeacher(session, votes);
+      } else {
+        renderStudent(session, votes);
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // INIT
+    // ═══════════════════════════════════════════════════════════
+    renderLanding();
+    // Set lastQIndex from cached on init
+    lastQIndex = cachedSession.index;
+  </script>
+</body>
+</html>
