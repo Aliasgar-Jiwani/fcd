@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import QUESTIONS from './data/questions'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import QUESTIONS, { TOPICS } from './data/questions'
 import { dbGet, dbSet, dbDelete, subscribeToQuizState } from './lib/db'
 import './index.css'
 
-const TOTAL = QUESTIONS.length
 const BAR_COLORS = ['#818cf8', '#f59e0b', '#34d399', '#fb7185']
 const OPT_KEYS = ['A', 'B', 'C', 'D']
 
@@ -26,7 +25,7 @@ function tallyVotes(votes, optionCount) {
 // ═══════════════════════════════════════════════════════════
 // TOPBAR
 // ═══════════════════════════════════════════════════════════
-function Topbar({ question, qIndex, connected }) {
+function Topbar({ question, qIndex, total, connected }) {
   return (
     <div className="topbar">
       <span className="round-badge">
@@ -34,7 +33,7 @@ function Topbar({ question, qIndex, connected }) {
         Round {question.round}
       </span>
       <span className="q-counter">
-        Question {qIndex + 1} of {TOTAL}
+        Question {qIndex + 1} of {total}
       </span>
       <span
         className={`sync-dot ${connected ? 'connected' : 'disconnected'}`}
@@ -106,17 +105,93 @@ function Landing({ onChoose }) {
 }
 
 // ═══════════════════════════════════════════════════════════
+// TOPIC SELECTOR (Teacher picks topics before starting quiz)
+// ═══════════════════════════════════════════════════════════
+function TopicSelector({ sessionTopics, onStart }) {
+  const [selected, setSelected] = useState(() => {
+    if (sessionTopics && sessionTopics.length > 0) {
+      return new Set(sessionTopics)
+    }
+    return new Set(TOPICS.map(t => t.key))
+  })
+
+  const toggle = (key) => {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
+  const selectAll = () => setSelected(new Set(TOPICS.map(t => t.key)))
+  const selectNone = () => setSelected(new Set())
+
+  const questionCount = QUESTIONS.filter(q => selected.has(q.topic)).length
+
+  return (
+    <div className="screen">
+      <div className="topbar">
+        <span className="round-badge"><span className="dot" /> Setup</span>
+        <span className="q-counter">{selected.size} of {TOPICS.length} topics selected</span>
+      </div>
+      <div className="main-content">
+        <div className="topic-header">
+          <h2 className="topic-heading">Select Topics</h2>
+          <p className="topic-subtitle">Choose which topics to include in today's quiz</p>
+          <div className="topic-bulk-actions">
+            <button className="btn btn-ghost btn-sm" onClick={selectAll}>✓ Select All</button>
+            <button className="btn btn-ghost btn-sm" onClick={selectNone}>✗ Clear All</button>
+          </div>
+        </div>
+        <div className="topic-grid">
+          {TOPICS.map(topic => {
+            const count = QUESTIONS.filter(q => q.topic === topic.key).length
+            const isActive = selected.has(topic.key)
+            return (
+              <button
+                key={topic.key}
+                className={`topic-card ${isActive ? 'active' : ''}`}
+                onClick={() => toggle(topic.key)}
+                style={{ '--topic-color': topic.color }}
+              >
+                <span className="topic-icon">{topic.icon}</span>
+                <span className="topic-name">{topic.title}</span>
+                <span className="topic-desc">{topic.description}</span>
+                <span className="topic-count">{count} question{count !== 1 ? 's' : ''}</span>
+                {isActive && <span className="topic-check">✓</span>}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+      <div className="controls">
+        <button
+          className="btn btn-primary"
+          disabled={selected.size === 0}
+          onClick={() => onStart([...selected])}
+        >
+          🚀 Start Quiz — {questionCount} question{questionCount !== 1 ? 's' : ''}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════
 // TEACHER VIEW
 // ═══════════════════════════════════════════════════════════
-function TeacherView({ session, votes, connected, onReveal, onNext, onReset }) {
+function TeacherView({ session, votes, connected, questions, onReveal, onNext, onReset, onChangeTopics }) {
   const idx = session.index
   const revealed = session.revealed
-  const isComplete = idx >= TOTAL
+  const total = questions.length
+  const isComplete = idx >= total
 
   if (isComplete) {
+    const lastQ = questions[total - 1]
     return (
       <div className="screen">
-        <Topbar question={QUESTIONS[TOTAL - 1]} qIndex={TOTAL - 1} connected={connected} />
+        {lastQ && <Topbar question={lastQ} qIndex={total - 1} total={total} connected={connected} />}
         <div className="main-content">
           <div className="complete-card">
             <div className="complete-icon">🎉</div>
@@ -125,28 +200,31 @@ function TeacherView({ session, votes, connected, onReveal, onNext, onReset }) {
           </div>
         </div>
         <div className="controls">
-          <button className="btn btn-danger-ghost" onClick={onReset}>↻ Reset Session</button>
+          <button className="btn btn-primary" onClick={onChangeTopics}>📋 Change Topics</button>
+          <span className="spacer" />
+          <button className="btn btn-danger-ghost" onClick={onReset}>↻ Restart Quiz</button>
         </div>
       </div>
     )
   }
 
-  const q = QUESTIONS[idx]
+  const q = questions[idx]
+  if (!q) return null
   const tallies = tallyVotes(votes, q.options.length)
   const totalVotes = tallies.reduce((a, b) => a + b, 0)
   const maxTally = Math.max(...tallies, 1)
-  const isRound1 = q.round === 1
+  const isItemName = q.topic === 'computer-or-not'
   const hasCorrect = q.correct !== null
-  const isLast = idx === TOTAL - 1
+  const isLast = idx === total - 1
 
   return (
     <div className="screen">
-      <Topbar question={q} qIndex={idx} connected={connected} />
+      <Topbar question={q} qIndex={idx} total={total} connected={connected} />
       <div className="main-content">
         <div className="question-card">
           <div className="round-title">Round {q.round} — {q.roundTitle}</div>
-          <div className={`question-text ${isRound1 ? 'item-name' : ''}`}>
-            {isRound1 ? q.text : `\u201C${q.text}\u201D`}
+          <div className={`question-text ${isItemName ? 'item-name' : ''}`}>
+            {isItemName ? q.text : `\u201C${q.text}\u201D`}
           </div>
           {q.description && (
             <p className="question-desc">{q.description}</p>
@@ -197,6 +275,7 @@ function TeacherView({ session, votes, connected, onReveal, onNext, onReset }) {
           {isLast ? '🏁 Finish Quiz' : '→ Next Question'}
         </button>
         <span className="spacer" />
+        <button className="btn btn-ghost btn-sm" onClick={onChangeTopics}>📋 Topics</button>
         <button className="btn btn-danger-ghost" onClick={onReset}>↻ Reset</button>
       </div>
     </div>
@@ -206,10 +285,11 @@ function TeacherView({ session, votes, connected, onReveal, onNext, onReset }) {
 // ═══════════════════════════════════════════════════════════
 // STUDENT VIEW
 // ═══════════════════════════════════════════════════════════
-function StudentView({ session, myVote, connected, onVote }) {
+function StudentView({ session, myVote, connected, questions, onVote }) {
   const idx = session.index
   const revealed = session.revealed
-  const isComplete = idx >= TOTAL
+  const total = questions.length
+  const isComplete = idx >= total
 
   if (isComplete) {
     return (
@@ -225,8 +305,9 @@ function StudentView({ session, myVote, connected, onVote }) {
     )
   }
 
-  const q = QUESTIONS[idx]
-  const isRound1 = q.round === 1
+  const q = questions[idx]
+  if (!q) return null
+  const isItemName = q.topic === 'computer-or-not'
   const hasCorrect = q.correct !== null
   const hasVoted = myVote !== null
 
@@ -247,12 +328,12 @@ function StudentView({ session, myVote, connected, onVote }) {
 
   return (
     <div className="screen">
-      <Topbar question={q} qIndex={idx} connected={connected} />
+      <Topbar question={q} qIndex={idx} total={total} connected={connected} />
       <div className="main-content">
         <div className="question-card">
           <div className="round-title">Round {q.round} — {q.roundTitle}</div>
-          <div className={`question-text ${isRound1 ? 'item-name' : ''}`}>
-            {isRound1 ? q.text : `\u201C${q.text}\u201D`}
+          <div className={`question-text ${isItemName ? 'item-name' : ''}`}>
+            {isItemName ? q.text : `\u201C${q.text}\u201D`}
           </div>
           {q.description && (
             <p className="question-desc">{q.description}</p>
@@ -326,6 +407,22 @@ function StudentWaiting({ connected }) {
 }
 
 // ═══════════════════════════════════════════════════════════
+// HELPER: Build filtered question list with dynamic round #
+// ═══════════════════════════════════════════════════════════
+function buildFilteredQuestions(topicKeys) {
+  if (!topicKeys || topicKeys.length === 0) return []
+  // Ensure topics are in canonical TOPICS order
+  const orderedTopics = TOPICS.map(t => t.key).filter(k => topicKeys.includes(k))
+  return QUESTIONS
+    .filter(q => orderedTopics.includes(q.topic))
+    .map(q => ({
+      ...q,
+      round: orderedTopics.indexOf(q.topic) + 1,
+      roundTitle: TOPICS.find(t => t.key === q.topic)?.title || ''
+    }))
+}
+
+// ═══════════════════════════════════════════════════════════
 // MAIN APP
 // ═══════════════════════════════════════════════════════════
 export default function App() {
@@ -335,10 +432,17 @@ export default function App() {
   const [myVote, setMyVote] = useState(null)
   const [connected, setConnected] = useState(false)
   const [hasSession, setHasSession] = useState(false)
+  const [selectedTopics, setSelectedTopics] = useState(null)
 
   const lastQIndexRef = useRef(-1)
   const unsubRef = useRef(null)
   const pollRef = useRef(null)
+
+  // Compute filtered questions based on selected topics
+  const filteredQuestions = useMemo(
+    () => buildFilteredQuestions(selectedTopics),
+    [selectedTopics]
+  )
 
   // ─── Refresh state from Supabase ───
   const refreshState = useCallback(async () => {
@@ -349,6 +453,11 @@ export default function App() {
     }
     setHasSession(true)
     setSession(s)
+
+    // Sync topics from session (important for students)
+    if (s.topics && s.topics.length > 0) {
+      setSelectedTopics(s.topics)
+    }
 
     const v = (await dbGet('votes:q' + s.index)) || {}
     setVotes(v)
@@ -370,9 +479,11 @@ export default function App() {
 
     if (r === 'teacher') {
       const existing = await dbGet('session:currentQuestion')
-      if (!existing) {
-        await dbSet('session:currentQuestion', { index: 0, revealed: false })
+      if (existing && existing.topics && existing.topics.length > 0) {
+        // Resume existing session with its topics
+        setSelectedTopics(existing.topics)
       }
+      // else: selectedTopics stays null → TopicSelector shown
     }
 
     await refreshState()
@@ -397,10 +508,25 @@ export default function App() {
     }
   }, [])
 
+  // ─── Teacher: Start quiz with selected topics ───
+  const handleStartQuiz = useCallback(async (topics) => {
+    setSelectedTopics(topics)
+    // Clear all possible previous votes
+    for (let i = 0; i < QUESTIONS.length; i++) {
+      await dbDelete('votes:q' + i)
+    }
+    const newSession = { index: 0, revealed: false, topics }
+    await dbSet('session:currentQuestion', newSession)
+    setSession(newSession)
+    setVotes({})
+    setMyVote(null)
+    lastQIndexRef.current = 0
+  }, [])
+
   // ─── Teacher actions ───
   const handleReveal = useCallback(async () => {
     const s = (await dbGet('session:currentQuestion')) || session
-    const newSession = { index: s.index, revealed: true }
+    const newSession = { ...s, revealed: true }
     await dbSet('session:currentQuestion', newSession)
     setSession(newSession)
   }, [session])
@@ -408,7 +534,7 @@ export default function App() {
   const handleNext = useCallback(async () => {
     const s = (await dbGet('session:currentQuestion')) || session
     const nextIdx = s.index + 1
-    const newSession = { index: nextIdx, revealed: false }
+    const newSession = { ...s, index: nextIdx, revealed: false }
     await dbSet('session:currentQuestion', newSession)
     setSession(newSession)
     lastQIndexRef.current = nextIdx
@@ -417,14 +543,31 @@ export default function App() {
   }, [session])
 
   const handleReset = useCallback(async () => {
-    for (let i = 0; i < TOTAL; i++) {
+    // Restart quiz with same topics
+    const topics = selectedTopics || []
+    for (let i = 0; i < QUESTIONS.length; i++) {
       await dbDelete('votes:q' + i)
     }
-    await dbSet('session:currentQuestion', { index: 0, revealed: false })
-    setSession({ index: 0, revealed: false })
+    const newSession = { index: 0, revealed: false, topics }
+    await dbSet('session:currentQuestion', newSession)
+    setSession(newSession)
     setVotes({})
     setMyVote(null)
     lastQIndexRef.current = 0
+  }, [selectedTopics])
+
+  const handleChangeTopics = useCallback(async () => {
+    // Clear session and go back to topic selector
+    for (let i = 0; i < QUESTIONS.length; i++) {
+      await dbDelete('votes:q' + i)
+    }
+    await dbDelete('session:currentQuestion')
+    setSession({ index: 0, revealed: false })
+    setVotes({})
+    setMyVote(null)
+    setHasSession(false)
+    lastQIndexRef.current = 0
+    setSelectedTopics(null)
   }, [])
 
   // ─── Student action ───
@@ -445,15 +588,21 @@ export default function App() {
   }
 
   if (role === 'teacher') {
+    // Show topic selector if no topics chosen yet
+    if (!selectedTopics || selectedTopics.length === 0) {
+      return <TopicSelector sessionTopics={session?.topics} onStart={handleStartQuiz} />
+    }
     return (
       <>
         <TeacherView
           session={session}
           votes={votes}
           connected={connected}
+          questions={filteredQuestions}
           onReveal={handleReveal}
           onNext={handleNext}
           onReset={handleReset}
+          onChangeTopics={handleChangeTopics}
         />
         <div className={`conn-toast ${!connected ? 'show' : ''}`}>
           ⚠ Reconnecting to server…
@@ -463,7 +612,7 @@ export default function App() {
   }
 
   // Student
-  if (!hasSession) {
+  if (!hasSession || filteredQuestions.length === 0) {
     return (
       <>
         <StudentWaiting connected={connected} />
@@ -480,6 +629,7 @@ export default function App() {
         session={session}
         myVote={myVote}
         connected={connected}
+        questions={filteredQuestions}
         onVote={handleVote}
       />
       <div className={`conn-toast ${!connected ? 'show' : ''}`}>
