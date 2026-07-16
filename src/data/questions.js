@@ -11,6 +11,7 @@ export const TOPICS = [
   { key: 'input-devices',    title: 'Input Devices',           icon: '⌨️', description: 'How we talk to computers',          color: '#22c55e' },
   { key: 'output-devices',   title: 'Output Devices',          icon: '🖥️', description: 'How computers talk back',           color: '#ec4899' },
   { key: 'memory-storage',   title: 'Memory & Storage',        icon: '💾', description: 'RAM, ROM, HDD, SSD & more',        color: '#14b8a6' },
+  { key: 'system-app-sw',    title: 'System & App Software',   icon: '🛠️', description: 'OS, drivers, firmware & apps',        color: '#8b5cf6' },
 ]
 
 // ═══════════════════════════════════════════════════════════
@@ -466,6 +467,99 @@ const QUESTIONS = [
     correct: 2,
     explanation: 'SSD — A Solid State Drive uses flash memory chips (no moving parts), making it much faster, quieter, and more durable than a traditional HDD.',
     debatable: false
+  },
+
+  // ─── TOPIC: System and Application Software ──────────────
+  {
+    topic: 'system-app-sw',
+    text: 'Your smartphone has Android/iOS running silently in the background, and apps like WhatsApp & Instagram that you tap and use. Android/iOS is ____ and WhatsApp is ____.',
+    options: ['Application software; System software', 'System software; Application software', 'Firmware; Utility software', 'Drivers; Operating System'],
+    correct: 1,
+    explanation: 'Android/iOS is system software — it quietly manages the screen, battery, Wi-Fi, and memory so apps can run. WhatsApp & Instagram are application software — they\'re what you actually open and use.',
+    debatable: false
+  },
+  {
+    topic: 'system-app-sw',
+    text: 'Windows, Linux, and Android are all examples of:',
+    options: ['Application Software', 'Utility Software', 'Operating Systems (System Software)', 'Firmware'],
+    correct: 2,
+    explanation: 'Operating Systems are system software — they manage hardware resources (CPU, memory, devices) and provide a platform for application software to run on.',
+    debatable: false
+  },
+  {
+    topic: 'system-app-sw',
+    text: 'You plug in a new printer and install a small program so the OS can talk to it. That small program is a:',
+    options: ['Utility software', 'Application software', 'Firmware', 'Device Driver'],
+    correct: 3,
+    explanation: 'Device Drivers are translators between the OS and hardware. A printer driver tells the OS how to send print commands to that specific printer model.',
+    debatable: false
+  },
+  {
+    topic: 'system-app-sw',
+    text: 'The very first code that runs when you press the power button — before Windows or Linux even loads — is called:',
+    options: ['Antivirus', 'Device Driver', 'Firmware (BIOS/UEFI)', 'MS Word'],
+    correct: 2,
+    explanation: 'Firmware (BIOS/UEFI) is the very first code that wakes the hardware up. It checks that RAM, CPU, and storage are working, then hands control over to the Operating System.',
+    debatable: false
+  },
+  {
+    topic: 'system-app-sw',
+    text: 'Antivirus software, disk cleanup tools, and backup utilities are all examples of:',
+    options: ['Application Software', 'Operating System', 'Utility Software (System Software)', 'Custom Software'],
+    correct: 2,
+    explanation: 'Utility software is the "maintenance crew" of system software — it keeps the system healthy, secure, and optimized. Users rarely interact with it directly.',
+    debatable: false
+  },
+  {
+    topic: 'system-app-sw',
+    text: 'MS Word, Google Chrome, and VLC Media Player are examples of:',
+    options: ['System Software', 'Firmware', 'General-Purpose Application Software', 'Device Drivers'],
+    correct: 2,
+    explanation: 'General-purpose application software is designed for a wide range of users and tasks — writing documents, browsing the web, playing media.',
+    debatable: false
+  },
+  {
+    topic: 'system-app-sw',
+    text: 'Tally (for accounting) and AutoCAD (for engineering design) are examples of:',
+    options: ['General-Purpose Software', 'Specific-Purpose Application Software', 'System Software', 'Utility Software'],
+    correct: 1,
+    explanation: 'Specific-purpose (or special-purpose) application software is built for one particular domain — Tally for accounting, AutoCAD for design, hospital management systems for clinics.',
+    debatable: false
+  },
+  {
+    topic: 'system-app-sw',
+    text: 'A local hospital hires a team to build a software system tailored exactly to their patient management needs. This is:',
+    options: ['General-Purpose Software', 'System Software', 'Custom / Bespoke Software', 'Firmware'],
+    correct: 2,
+    explanation: 'Custom (bespoke) software is built from scratch for one specific client\'s unique requirements. It\'s not sold to the general public.',
+    debatable: false
+  },
+  {
+    topic: 'system-app-sw',
+    text: 'Which statement best captures the key difference between system software and application software?',
+    options: [
+      'System software is free; application software is paid',
+      'System software serves the computer; application software serves the user',
+      'System software is newer than application software',
+      'Application software always needs the internet'
+    ],
+    correct: 1,
+    explanation: 'System software serves the computer — managing hardware, drivers, and resources behind the scenes. Application software serves the user — it\'s what you open to do actual work or play.',
+    debatable: false
+  },
+  {
+    topic: 'system-app-sw',
+    text: 'Can a user directly interact with system software on a daily basis?',
+    options: [
+      'Yes — we use it all the time just like apps',
+      'Rarely — it works quietly in the background',
+      'Never — it doesn\'t exist on personal computers',
+      'Only on Linux, not on Windows'
+    ],
+    correct: 1,
+    explanation: 'System software (OS kernel, drivers, firmware) works silently in the background. Users rarely interact with it directly — unlike application software, which they open and use every day.',
+    debatable: true,
+    whyDebatable: 'Some students argue they "use" Windows daily — but they\'re actually using the Windows shell/GUI (an application layer), not the OS kernel itself. Great discussion point!'
   }
 ]
 
